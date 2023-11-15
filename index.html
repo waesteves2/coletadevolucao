@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Coletas</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #coletas-form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            margin: auto;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input,
+        select {
+            width: calc(100% - 16px);
+            padding: 8px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 15px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: #fff;
+            border-radius: 4px 4px 0 0;
+            margin-right: 2px;
+            transition: background-color 0.3s ease;
+        }
+
+        .tab:hover {
+            background-color: #2980b9;
+        }
+
+        .active-tab {
+            background-color: #2980b9;
+        }
+
+        .coletas-container {
+            display: none;
+        }
+
+        .coletas-container div {
+            background-color: #ecf0f1;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .coletas-container div p {
+            margin-right: 20px;
+        }
+
+        .alert {
+            color: red;
+            margin-top: 10px;
+        }
+
+        .coletado {
+            background-color: #4CAF50;
+            color: black;
+            display: none;
+            /* Inicialmente oculto */
+        }
+
+        .tick {
+            color: #4CAF50;
+            font-size: 35px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="coletas-form">
+
+        <div class="tabs">
+            <div class="tab" onclick="selecionarAba('coletasJaú')">Coletas em Jaú</div>
+            <div class="tab" onclick="selecionarAba('coletasForaJaú')">Coletas Fora Jaú</div>
+            <div class="tab" onclick="selecionarAba('coletados')">Coletados</div>
+        </div>
+
+        <div id="coletasJaú" class="coletas-container"></div>
+        <div id="coletasForaJaú" class="coletas-container"></div>
+        <div id="coletados" class="coletas-container"></div>
+
+        <h2>Controle de Coletas Devolução</h2>
+
+        <label for="protocolo">Protocolo:</label>
+        <input type="text" id="protocolo">
+
+        <label for="data">Data Solicitada:</label>
+        <input type="date" id="data">
+
+        <label for="nfe">NF-e:</label>
+        <input type="text" id="nfe">
+
+        <label for="und">UND:</label>
+        <input type="text" id="und">
+
+        <label for="assunto">Assunto E-mail:</label>
+        <input type="text" id="assunto">
+
+        <label for="coletaType">Coleta Jaú ou Coleta fora Jaú:</label>
+        <select id="coletaType">
+            <option value="jaú">Coleta Jaú</option>
+            <option value="foraJaú">Coleta fora Jaú</option>
+        </select>
+
+        <button onclick="adicionarEvento()">Adicionar Evento</button>
+
+        <div id="alert" class="alert"></div>
+    </div>
+
+    <script>
+
+        function adicionarEvento() {
+            const protocolo = document.getElementById('protocolo').value;
+            const data = document.getElementById('data').value;
+            const nfe = document.getElementById('nfe').value;
+            const und = document.getElementById('und').value;
+            const assunto = document.getElementById('assunto').value;
+            const coletaType = document.getElementById('coletaType').value;
+
+            const evento = {
+                Protocolo: protocolo,
+                'Data Solicitada': data,
+                'NF-e': nfe,
+                UND: und,
+                'Assunto E-mail': assunto,
+                'Tipo de Coleta': coletaType,
+            };
+
+            const containerId = coletaType === 'jaú' ? 'coletasJaú' : 'coletasForaJaú';
+            const container = document.getElementById(containerId);
+
+            const div = document.createElement('div');
+            div.className = 'evento';
+            for (const key in evento) {
+                const p = document.createElement('p');
+                p.innerHTML = `<strong>${key}:</strong> ${evento[key]}`;
+                div.appendChild(p);
+            }
+
+            const coletadoButton = document.createElement('div');
+            coletadoButton.textContent = '✓';
+            coletadoButton.className = 'coletado tick';
+            coletadoButton.onclick = function () {
+                marcarComoColetado(evento, div, container, coletadoButton);
+            };
+
+            div.appendChild(coletadoButton);
+            container.appendChild(div);
+
+            const eventosSalvos = obterEventos(containerId);
+            eventosSalvos.push(evento);
+            salvarEventos(containerId, eventosSalvos);
+
+            document.getElementById('protocolo').value = '';
+            document.getElementById('data').value = '';
+            document.getElementById('nfe').value = '';
+            document.getElementById('und').value = '';
+            document.getElementById('assunto').value = '';
+            document.getElementById('coletaType').value = '';
+        }
+
+        function marcarComoColetado(evento, div, container, coletadoButton) {
+            const cteNumero = prompt('Digite o número do CT-e:');
+            if (cteNumero !== null) {
+                evento['CT-e'] = cteNumero;
+
+                const coletadosContainer = document.getElementById('coletados');
+                const eventoClone = div.cloneNode(true);
+
+                const pCte = document.createElement('p');
+                pCte.innerHTML = `<strong>CT-e:</strong> ${cteNumero}`;
+                eventoClone.appendChild(pCte);
+
+                coletadosContainer.appendChild(eventoClone);
+                container.removeChild(div);
+
+                eventoClone.classList.add('coletado');
+
+                coletadoButton.style.display = 'none';
+
+                const eventosColetados = obterEventos('coletados');
+                eventosColetados.push(evento);
+                salvarEventos('coletados', eventosColetados);
+
+                const eventosAbaAnterior = obterEventos(container.id);
+                const index = eventosAbaAnterior.findIndex(e => e.Protocolo === evento.Protocolo);
+                if (index !== -1) {
+                    eventosAbaAnterior.splice(index, 1);
+                    salvarEventos(container.id, eventosAbaAnterior);
+                }
+            }
+        }
+
+        function obterEventos(chave) {
+            const eventos = localStorage.getItem(chave);
+            return eventos ? JSON.parse(eventos) : [];
+        }
+
+        function salvarEventos(chave, eventos) {
+            localStorage.setItem(chave, JSON.stringify(eventos));
+        }
+
+
+        function selecionarAba(aba) {
+            const containers = ['coletasJaú', 'coletasForaJaú', 'coletados'];
+            containers.forEach(container => {
+                const containerElement = document.getElementById(container);
+                containerElement.style.display = container === aba ? 'block' : 'none';
+            });
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active-tab'));
+            document.querySelector(`.${aba}`).classList.add('active-tab');
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            exibirEventosSalvos('coletasJaú');
+            exibirEventosSalvos('coletasForaJaú');
+            exibirEventosSalvos('coletados');
+        });
+
+        function exibirEventosSalvos(containerId) {
+    const container = document.getElementById(containerId);
+    const eventosSalvos = obterEventos(containerId);
+
+    eventosSalvos.forEach(function (evento) {
+        const div = document.createElement('div');
+        div.className = 'evento';
+
+        for (const key in evento) {
+            if (key !== 'CT-e') {
+                const p = document.createElement('p');
+                p.innerHTML = `<strong>${key}:</strong> ${evento[key]}`;
+                div.appendChild(p);
+            }
+        }
+
+        if (containerId === 'coletados') {
+            if (evento['CT-e']) {
+                const pCte = document.createElement('p');
+                pCte.innerHTML = `<strong>CT-e:</strong> ${evento['CT-e']}`;
+                div.appendChild(pCte);
+            }
+            div.classList.add('coletado');
+        } else {
+            const coletadoButton = document.createElement('div');
+            coletadoButton.textContent = '✓';
+            coletadoButton.className = 'coletado tick';
+            coletadoButton.onclick = function () {
+                marcarComoColetado(evento, div, container, coletadoButton);
+            };
+            div.appendChild(coletadoButton);
+        }
+
+        container.appendChild(div);
+
+        // Adicionando verificação de tempo para alertas
+        if ((containerId === 'coletasJaú' || containerId === 'coletasForaJaú') && evento['Data Solicitada']) {
+            const dataSolicitada = new Date(evento['Data Solicitada']);
+            const agora = new Date();
+            const diferencaEmDias = Math.floor((agora - dataSolicitada) / (1000 * 60 * 60 * 24));
+
+            if (diferencaEmDias > 2) {
+                alert(`Atenção: A coleta com o protocolo ${evento['Protocolo']} ainda não foi tratada por mais de 2 dias.`);
+            }
+        }
+    });
+
+    if (containerId === 'coletados') {
+        const resetButton = document.createElement('button');
+        resetButton.textContent = 'Resetar';
+        resetButton.onclick = function () {
+            resetarAbaColetados();
+        };
+        container.appendChild(resetButton);
+    }
+}
+
+function resetarAbaColetados() {
+    const confirmacao = confirm('Tem certeza que deseja resetar a aba "Coletados"? Esta ação não poderá ser desfeita.');
+
+    if (confirmacao) {
+        localStorage.removeItem('coletados');
+        document.getElementById('coletados').innerHTML = '';
+    }
+}
+
+
+    </script>
+
+</body>
+
+</html>
